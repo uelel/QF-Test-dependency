@@ -1,4 +1,4 @@
-# QF-Test dependency
+# QF-Test dependency [![license](https://img.shields.io/github/license/DAVFoundation/captain-n3m0.svg?style=flat-square)](https://github.com/DAVFoundation/captain-n3m0/blob/master/LICENSE)
 
 This is a basic implementation of dependency mechanism in `QF-Test`.  
 A dependency allows testcases to start running from defined SUT screens (states).
