@@ -1,0 +1,408 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE RootStep>
+<RootStep id="_0" name="root" version="5.2.1">
+  <include>qfs.qft</include>
+  <TestSet id="_1" name="Example">
+    <TestCase id="_2" name="Test case that depends on the login screen">
+      <DependencyReference id="_QHbzL" reference="loginScreen">
+        <variable name="user">$(user1)</variable>
+        <variable name="pwd">$(pwd1)</variable>
+      </DependencyReference>
+    </TestCase>
+    <TestCase id="_QHbzM"
+              name="Test case that depends on the registration screen">
+      <DependencyReference id="_QHbzO" reference="registrationScreen">
+        <variable name="user">$(user1)</variable>
+        <variable name="pwd">$(pwd1)</variable>
+      </DependencyReference>
+    </TestCase>
+  </TestSet>
+  <PackageRoot id="_3">
+    <Package id="_2Bef" name="dependency">
+      <Procedure id="_QHbwa" name="resolveCancelBon">
+        <comment>Resolve action for any screen with title $(mask_cancelBon).</comment>
+        <ServerScriptStep id="_QHbzH">
+          <code>questionDisplayed = rc.callProcedure("label.checktext", 
+                                     {"lbltext": rc.lookup("questionCancelBon"),
+                                      "waitfor": "0"})
+
+# Press button yes in case question box is displayed
+if questionDisplayed == "true":
+    rc.callProcedure("button.press", {"label": rc.lookup("bntYes")})
+
+# Otherwise close cashdrawer
+else:
+    rc.callProcedure("devices.cashdrawer_close")</code>
+        </ServerScriptStep>
+      </Procedure>
+      <Procedure id="_QHb65" name="resolveRefund">
+        <comment>This procedure executes correct actions for any mask with $(mask_refund) title</comment>
+        <ServerScriptStep id="_QHb66">
+          <code>btnC = rc.lookup("btnC")
+btnCancel = rc.lookup("btnCancel")
+
+cancelButtonExist = getBool(rc.callProcedure("button.exist",
+                                             {"label": btnCancel}))
+# Press btnC in case btnCancel does not exist
+if not cancelButtonExist:
+    rc.callProcedure("button.press",
+                     {"label": btnC})
+# Press btnCancel in case it exists
+else:
+    rc.callProcedure("button.press",
+                     {"label": btnCancel})</code>
+        </ServerScriptStep>
+      </Procedure>
+      <Procedure id="_QHACE" name="completeLogout">
+        <variable name="user"/>
+        <variable name="pwd"/>
+        <comment>Completes logout from screen with Logout title.</comment>
+        <ComponentWaiter client="$(client)" component="USER_INPUT.com"
+                         id="_QHACF" local="true" raise="false"
+                         resvarname="userFieldExist" timeout="0"/>
+        <IfSequence id="_QHACG"
+                    name="In case user ID field exist, enter user ID"
+                    test="$(userFieldExist)">
+          <ProcedureCall id="_QHACH" procedure="insertdigits">
+            <variable name="inputseq">$(user)</variable>
+          </ProcedureCall>
+          <ProcedureCall id="_QHACI" procedure="button.press">
+            <variable name="label">$(btnOK)</variable>
+          </ProcedureCall>
+        </IfSequence>
+        <ProcedureCall id="_QHACJ" procedure="insertdigits">
+          <variable name="inputseq">$(pwd)</variable>
+        </ProcedureCall>
+        <ProcedureCall id="_QHACK" procedure="button.press">
+          <variable name="label">$(btnOK)</variable>
+        </ProcedureCall>
+        <ProcedureCall id="_QHACL" procedure="waitfordialogtodispose"/>
+      </Procedure>
+      <Procedure id="_QHAC3" name="buttonIsEnabled">
+        <variable name="componentName">PseudoButton</variable>
+        <variable name="label"/>
+        <comment>Check if button with given component is enabled.
+In case of PseudoButton component, appropriate label is passed along.
+Returns true if given component is enabled, false otherwise.
+Returns false is given component cannot be found.</comment>
+        <ClientScriptStep client="$(client)" id="_QHAC4">
+          <code>try:
+    comp = rc.getComponent(rc.lookup("componentName"))
+    isEnabled = comp.isEnabled()
+except:
+    isEnabled = False
+
+rc.setLocal("isEnabled", isEnabled)</code>
+        </ClientScriptStep>
+        <ReturnStep id="_QHAC5" retval="$(isEnabled)"/>
+      </Procedure>
+      <Procedure id="_QHABy" name="completeAuthorization">
+        <comment>Checks for appropriate graphical elements and completes all authorization steps from any screen with Authorization title.
+Throws no error.</comment>
+        <ProcedureCall id="_QHAC6" local="true"
+                       procedure="dependency.buttonIsEnabled"
+                       retvarname="scanTokenRequired">
+          <variable name="componentName">buttonScann_TOKEN</variable>
+        </ProcedureCall>
+        <IfSequence id="_QHAB-" name="Scan token is required"
+                    test="$(scanTokenRequired)">
+          <ProcedureCall id="_QHAC0"
+                         procedure="devices.virtual_rfidscanner_scan">
+            <variable name="input">$(authRFIDToken)</variable>
+            <comment>Scan RFID token</comment>
+          </ProcedureCall>
+          <ProcedureCall id="_QHAC9" procedure="waitfordialogtodispose"/>
+          <ProcedureCall id="_QHACA" local="true"
+                         procedure="label.titleExists"
+                         retvarname="authorizationDataRequired">
+            <variable name="title">$(mask_authorization)</variable>
+          </ProcedureCall>
+          <IfSequence id="_QHACB" name="Authorization data required"
+                      test="$(authorizationDataRequired)">
+            <ProcedureCall id="_QHACC" procedure="authorization"/>
+          </IfSequence>
+        </IfSequence>
+        <IfSequence id="_QHAC7" name="Authorization data required"
+                    test="not $(scanTokenRequired)">
+          <ProcedureCall id="_QHAC8" procedure="authorization"/>
+        </IfSequence>
+      </Procedure>
+      <Procedure id="_QHaPj" name="clearArtNrInput">
+        <comment>Clear article number input on registration screen if not empty</comment>
+        <ClientScriptStep client="$(client)" id="_QHaPk">
+          <code>try:
+    inputField = rc.getComponent("INPUT_FIELD")
+    if inputField.getText():
+        rc.callProcedure("button.press", {'label': rc.lookup("btnC")})
+        print 'Clean item number input: Done'
+except:
+    pass</code>
+        </ClientScriptStep>
+      </Procedure>
+      <Procedure id="_QHbba" name="resolveLogin">
+        <variable name="desiredState"/>
+        <comment>Resolves TPOS from any screen with $(mask_login) title.
+
+@param	desiredState	final state that should be achieved by dependency
+
+@return	Return "finished" when state is resolved, i.e. login screen is displayed and no further action is needed
+	Return anything else when state is not resolved, i.e. further action is needed
+
+@author	Uelel
+@since	24.11.2021</comment>
+        <ServerScriptStep id="_QHbbb" name="Resolve state">
+          <code>desiredState = rc.lookup("desiredState")
+
+
+if desiredState not in ('login', 'registration'):
+    rc.logError('dependency.resolveLogin: Unknown desired state!')
+
+
+if True:
+    # State is resolved
+    if desiredState == 'login':
+        rc.setLocal("result", "finished")
+        
+    # Login to registration screen
+    elif desiredState == 'registration':
+        rc.callProcedure("login",
+                         {'user': rc.lookup('user'),'pwd': rc.lookup('pwd')})
+        rc.setLocal("result", "executed")</code>
+        </ServerScriptStep>
+        <ReturnStep id="_QHbbg" retval="$(result)"/>
+      </Procedure>
+      <Procedure id="_QHbbd" name="resolveRegistration">
+        <variable name="desiredState"/>
+        <comment>Resolves TPOS from any screen with $(mask_registration) title.
+
+@param	desiredState	final state that should be achieved by dependency
+
+@return	Return "finished" when state is resolved, i.e. registration screen is displayed and no further action is needed
+	Return anything else when state is not resolved, i.e. further action is needed
+
+@author	Uelel
+@since	24.11.2021</comment>
+        <ServerScriptStep id="_QHbbf" name="Resolve state">
+          <code>desiredState = rc.lookup("desiredState")
+
+
+if desiredState not in ('login', 'registration'):
+    rc.logError('dependency.resolveRegistration: Unknown desired state!')
+
+
+# Press button cancel in case weight input field exists
+if rc.callProcedure("componentExist", {'comp': 'WEIGHT_INPUT_FIELD'}) == 'true':
+    rc.callProcedure("button.press",
+                     {'label': rc.lookup("btnCancel"),
+                      'logError': False})
+    rc.setLocal("result", "executed")
+
+else:
+    # Logout to login screen
+    if desiredState == 'login':
+        rc.callProcedure("logout",
+                         {'user': rc.lookup('user'),'pwd': rc.lookup('pwd')})
+        rc.setLocal("result", "executed")
+
+    # State is resolved
+    elif desiredState == 'registration':
+        # Clear article number input on registration screen if not empty
+        rc.callProcedure("dependency.clearArtNrInput")
+        rc.setLocal("result", "finished")</code>
+        </ServerScriptStep>
+        <ReturnStep id="_QHbbh" retval="$(result)"/>
+      </Procedure>
+      <Procedure id="_QHaPZ" name="executeActionForMessageBox">
+        <comment>Executes an action based on current message box.
+
+Actions are procedure calls that are called when component of a message box is found on the screen.
+Actions are defined in Python dictionary with format compatible to rc.callProcedure:
+&lt;component_id&gt;: {"proc": &lt;procedure_name&gt;, "pars": &lt;parameters_dictionary&gt;}
+
+Procedure returns states as required by dependency.getToDesiredScreen.
+
+@author	Uelel
+@since	24.11.2021</comment>
+        <ClientScriptStep client="$(client)" id="_QHaPf"
+                          name="Define states and corresponding actions">
+          <code>global messageActionDict
+
+# Define component names of message icons and corresponding actions
+messageActionDict = {
+    'labelerrormessageicon':     {'proc': 'button.press', 'pars': {'label': rc.lookup("btnNext"), 'logError': False}}, # error message box
+    'labelerrormessageicon2':    {'proc': 'button.press', 'pars': {'label': rc.lookup("btnNext"), 'logError': False}}, # error message box
+    'panelmessageicon':          {'proc': 'button.press', 'pars': {'label': rc.lookup("btnYes"), 'logError': False}} # question message box
+}</code>
+        </ClientScriptStep>
+        <ClientScriptStep client="$(client)" id="_QHaPb">
+          <code>global messageActionDict
+
+action = 'unknown'
+for compName, value in messageActionDict.items(): 
+    try:
+        rc.getComponent(compName)
+        action = value
+    except: continue
+
+print 'Chosen action: ', action
+
+if action != 'unknown':
+    rc.callProcedure(action['proc'], action['pars'])
+    rc.setLocal("result", "executed")
+else:
+    rc.setLocal("result", "unknown")</code>
+        </ClientScriptStep>
+        <ReturnStep id="_QHaPd" retval="$(result)"/>
+      </Procedure>
+      <Procedure id="_QHaPU" name="executeActionForTitle">
+        <variable name="title"/>
+        <variable name="desiredState"/>
+        <comment>Executes an action based on given title.
+
+Actions are procedure calls that are called when corresponding title is passed.
+Actions are defined in Python dictionary with format compatible to rc.callProcedure:
+&lt;title&gt;: {"proc": &lt;procedure_name&gt;, "pars": &lt;parameters_dictionary&gt;}
+
+Regular expressions can be used within titles.
+
+Procedure returns states as required by dependency.getToDesiredScreen.
+
+@param	title	current title
+@param	desiredState	final state that should be achieved by dependency
+
+@author	Uelel
+@since	24.11.2021</comment>
+        <ServerScriptStep id="_QHaR-"
+                          name="Define states and corresponding actions">
+          <code># Define titles and corresponding actions
+global stateActionDict
+stateActionDict = {
+    rc.lookup("mask_login"):             {'proc': 'dependency.resolveLogin', 'pars': {'desiredState': rc.lookup("desiredState")}},
+    rc.lookup("mask_registration"):      {'proc': 'dependency.resolveRegistration', 'pars': {'desiredState': rc.lookup("desiredState")}},
+    rc.lookup("mask_logout"):            {'proc': 'dependency.completeLogout', 'pars': {'user': rc.lookup("user"), 'pwd': rc.lookup("pwd")}},
+    rc.lookup("mask_break"):             {'proc': 'dependency.completeLogout', 'pars': {'user': rc.lookup("user"), 'pwd': rc.lookup("pwd")}},
+    rc.lookup("mask_payment"):           {'proc': 'devices.cashdrawer_close', 'pars': None},
+    rc.lookup("mask_bon"):               {'proc': 'cancelBon', 'pars': None},
+    rc.lookup("mask_authorization"):     {'proc': 'dependency.completeAuthorization', 'pars': None},
+    rc.lookup("mask_authorization2"):    {'proc': 'dependency.completeAuthorization', 'pars': None},
+    rc.lookup("mask_selectOption"):      {'proc': 'button.press', 'pars': {'label': rc.lookup("btnCancel"), 'logError': False}},
+    rc.lookup("mask_manualPrice"):       {'proc': 'button.press', 'pars': {'label': rc.lookup("btnCancel"), 'logError': False}},
+    rc.lookup("mask_cancelBon"):         {'proc': 'dependency.resolveCancelBon', 'pars': None},
+    rc.lookup("mask_repeatPosition"):    {'proc': 'button.press', 'pars': {'label': rc.lookup("btnNext"), 'logError': False}},
+    rc.lookup("mask_storno"):            {'proc': 'button.press', 'pars': {'label': rc.lookup("btnNext"), 'logError': False}},
+    rc.lookup("mask_article"):           {'proc': 'button.press', 'pars': {'label': rc.lookup("btnNext"), 'logError': False}},
+    rc.lookup("mask_articleinfo"):       {'proc': 'button.press', 'pars': {'label': rc.lookup("btnCancel"), 'logError': False}},
+    rc.lookup("mask_weight"):            {'proc': 'button.press', 'pars': {'label': rc.lookup("btnCancel"), 'logError': False}},
+    rc.lookup("mask_error"):             {'proc': 'button.press', 'pars': {'label': rc.lookup("btnNext"), 'logError': False}},
+    rc.lookup("mask_help"):              {'proc': 'button.press', 'pars': {'label': rc.lookup("btnNext"), 'logError': False}},
+    rc.lookup("mask_restriction"):       {'proc': 'button.press', 'pars': {'label': rc.lookup("btnOK"), 'logError': False}},
+    rc.lookup("mask_refund"):            {'proc': 'dependency.resolveRefund', 'pars': None}
+}</code>
+        </ServerScriptStep>
+        <ServerScriptStep id="_QHaS0">
+          <code>import re
+global stateActionDict
+title = rc.lookup("title")
+
+action = 'unknown'
+for key, value in stateActionDict.items():
+    if key and title and re.search(key, title):
+        action = value
+        break
+
+print 'Chosen action: ', action
+
+if action and action != 'unknown':
+    result = rc.callProcedure(action['proc'], action['pars'])
+    if result:
+        rc.setLocal("result", result)
+    else:
+        rc.setLocal("result", "executed")
+else:
+    rc.setLocal("result", "unknown")</code>
+        </ServerScriptStep>
+        <ReturnStep id="_QHaPY" retval="$(result)"/>
+      </Procedure>
+      <Procedure id="_QHaPR" name="getToDesiredScreen">
+        <variable name="desiredState"/>
+        <variable name="user"/>
+        <variable name="password"/>
+        <comment>Dependency core procedure that tries to iteratively resolve SUT screen.
+
+Two actions are pursued during each iteration:
+a) action based on current message box
+b) action based on current title
+
+Error is logged in case desired state could not be achieved during the iteration process.
+
+@author	Uelel
+@since	24.11.2021</comment>
+        <ServerScriptStep id="_QHaPi">
+          <code>from time import sleep
+import re
+
+desiredState = rc.lookup("desiredState")
+
+# Get to desired state
+for i in range(5):
+    print '\nGetting to %s screen %i/5:' % (desiredState, i+1) 
+
+    # Check whether message box is displayed and execute corresponding action
+    status = rc.callProcedure("dependency.executeActionForMessageBox")
+
+    # Get current title
+    title = rc.callProcedure("label.gettitle")
+    print 'Current title: %s' % title
+
+    # Execute action for given title
+    status = rc.callProcedure("dependency.executeActionForTitle", {"title": title, "desiredState": desiredState})
+    
+    # Break loop in case desired state was achieved
+    if status == 'finished':
+        break
+    
+    sleep(1.0)
+    if i == 4: rc.logError('dependency.getToDesiredScreen: State could not be resolved!')</code>
+        </ServerScriptStep>
+      </Procedure>
+    </Package>
+    <Dependency id="_QHaPl" name="loginScreen">
+      <discriminator>user</discriminator>
+      <discriminator>pwd</discriminator>
+      <DependencyReference id="_QHbzK" reference="Launch SUT"/>
+      <SetupSequence id="_QHaPn">
+        <ProcedureCall id="_QHaPo" procedure="dependency.getToDesiredScreen">
+          <variable name="desiredState">login</variable>
+          <variable name="user">$(user)</variable>
+          <variable name="password">$(pwd)</variable>
+        </ProcedureCall>
+      </SetupSequence>
+    </Dependency>
+    <Dependency id="_2B56" name="registrationScreen">
+      <discriminator>user</discriminator>
+      <discriminator>pwd</discriminator>
+      <DependencyReference id="_QHbzJ" reference="Launch SUT"/>
+      <SetupSequence id="_2B58">
+        <ProcedureCall id="_QHACM" procedure="dependency.getToDesiredScreen">
+          <variable name="desiredState">registration</variable>
+          <variable name="user">$(user)</variable>
+          <variable name="password">$(pwd)</variable>
+        </ProcedureCall>
+      </SetupSequence>
+    </Dependency>
+    <Dependency id="_2B1h" name="Launch SUT">
+      <comment>In this procedure all steps should be performed necessary to launch the SUT</comment>
+      <SetupSequence id="_2B1i" name="Launch SUT">
+        <SUTClientStarter client="$(client)" directory="path"
+                          executable="path" id="_2B1z"/>
+        <ClientWaiter client="$(client)" id="_2B1+" raise="false"/>
+      </SetupSequence>
+      <CleanupSequence id="_2B53" name="Close SUT">
+        <ClientStopper client="$(client)" id="_2B54"/>
+        <ProcessWaiter client="$(client)" id="_2B55"/>
+      </CleanupSequence>
+    </Dependency>
+  </PackageRoot>
+  <ExtraSequence id="_4"/>
+  <WindowList id="_5"/>
+</RootStep>
